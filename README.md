@@ -38,8 +38,10 @@ If you don't already have a Microsoft Azure subscription, you can get a FREE tri
             az account show
             ```
    
+
             If this is not the correct subscription, use             
    
+
             ```bash
             az account set -s <subscription name or id>  
             ```
@@ -50,6 +52,7 @@ If you don't already have a Microsoft Azure subscription, you can get a FREE tri
             az ad sp create-for-rbac --sdk-auth
             ```
    
+
             >Note: this command will automatically assign RBAC contributor role to the service principal at subscription level, you can narrow down the scope to the specific resource group where your tests will create the resources.
 
     2. Copy the output content and paste it in a file called azureauth.json and secure it with file system permissions
@@ -57,15 +60,19 @@ If you don't already have a Microsoft Azure subscription, you can get a FREE tri
             
             Powershell
    
+
             ```powershell
             [Environment]::SetEnvironmentVariable("AZURE_AUTH_LOCATION", "C:\sdksample\azureauth.json", "User")
             ```
    
+
             Bash
-            
+
+
             ```bash
             export AZURE_AUTH_LOCATION=/sdksamples/azureauth.json
             ``` 
+   
             
             >Note: for other Azure Active Directory authentication methods for Python, please refer to these [samples](https://github.com/AzureAD/microsoft-authentication-library-for-python/tree/dev/sample). 
 
