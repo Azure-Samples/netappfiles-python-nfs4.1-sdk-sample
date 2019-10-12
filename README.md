@@ -33,31 +33,40 @@ If you don't already have a Microsoft Azure subscription, you can get a FREE tri
 5. Virtual Network with a delegated subnet to Microsoft.Netapp/volumes resource. For more information, please refer to [Guidelines for Azure NetApp Files network planning](https://docs.microsoft.com/en-us/azure/azure-netapp-files/azure-netapp-files-network-topologies)
 6. For this sample Python console application work, we need to authenticate and the method chosen for this sample is using service principals.
    1. Within an [Azure Cloud Shell](https://docs.microsoft.com/en-us/azure/cloud-shell/quickstart) session, make sure you're logged on at the subscription where you want to be associated with the service principal by default:
+   
             ```bash
             az account show
             ```
+   
             If this is not the correct subscription, use             
+   
             ```bash
             az account set -s <subscription name or id>  
             ```
 
-    2. Create a service principal using Azure CLI
+    1. Create a service principal using Azure CLI
+   
             ```bash
             az ad sp create-for-rbac --sdk-auth
             ```
+   
             >Note: this command will automatically assign RBAC contributor role to the service principal at subscription level, you can narrow down the scope to the specific resource group where your tests will create the resources.
 
-    3. Copy the output content and paste it in a file called azureauth.json and secure it with file system permissions
-    4. Set an environment variable pointing to the file path you just created, here is an example with Powershell and bash:
+    2. Copy the output content and paste it in a file called azureauth.json and secure it with file system permissions
+    3. Set an environment variable pointing to the file path you just created, here is an example with Powershell and bash:
             
             Powershell
+   
             ```powershell
             [Environment]::SetEnvironmentVariable("AZURE_AUTH_LOCATION", "C:\sdksample\azureauth.json", "User")
             ```
+   
             Bash
+            
             ```bash
             export AZURE_AUTH_LOCATION=/sdksamples/azureauth.json
             ``` 
+            
             >Note: for other Azure Active Directory authentication methods for Python, please refer to these [samples](https://github.com/AzureAD/microsoft-authentication-library-for-python/tree/dev/sample). 
 
 # What is example.py doing? 
