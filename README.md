@@ -39,12 +39,12 @@ If you don't already have a Microsoft Azure subscription, you can get a FREE tri
             ```
    
 
-            If this is not the correct subscription, use             
+            If this is not the correct subscription, use:
    
 
-            ```bash
-            az account set -s <subscription name or id>  
-            ```
+                ```bash
+                az account set -s <subscription name or id>  
+                ```
 
     1. Create a service principal using Azure CLI
    
@@ -61,19 +61,18 @@ If you don't already have a Microsoft Azure subscription, you can get a FREE tri
             Powershell
    
 
-            ```powershell
-            [Environment]::SetEnvironmentVariable("AZURE_AUTH_LOCATION", "C:\sdksample\azureauth.json", "User")
-            ```
+                ```powershell
+                [Environment]::SetEnvironmentVariable("AZURE_AUTH_LOCATION", "C:\sdksample\azureauth.json", "User")
+                ```
    
 
             Bash
 
+                ```bash
+                export AZURE_AUTH_LOCATION=/sdksamples/azureauth.json
+                ```
 
-            ```bash
-            export AZURE_AUTH_LOCATION=/sdksamples/azureauth.json
-            ``` 
-   
-            
+
             >Note: for other Azure Active Directory authentication methods for Python, please refer to these [samples](https://github.com/AzureAD/microsoft-authentication-library-for-python/tree/dev/sample). 
 
 # What is example.py doing? 
