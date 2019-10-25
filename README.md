@@ -68,7 +68,7 @@ If you don't already have a Microsoft Azure subscription, you can get a FREE tri
 # What is example.py doing? 
 
 This sample project is dedicated to demonstrate how to deploy a Volume in Azure NetApp Files that uses NFS v4.1 protocol, similar to other examples, the authentication method is based on a service principal, this project will create a single volume with a single capacity pool using standard service level tier and finally an NFS v4.1 Volume.
-There is a section in the code dedicated to remove created resources, by default this script will remove all created resources, this behavior is controlled by a variable called `SHOULD_CLEANUP`, if you want to avoid this cleanup right after the creation operations, just set it to `False`. For a more advanced python example, please see the first item in the references section of this document.
+There is a section in the code dedicated to remove created resources, by default this script will not remove all created resources, this behavior is controlled by a variable called `SHOULD_CLEANUP`, if you want cleanup right after the creation operations, just set it to `True`. For a more advanced python example, please see the first item in the references section of this document.
 
 # Contents
 
