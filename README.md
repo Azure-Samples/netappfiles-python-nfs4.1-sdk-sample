@@ -18,9 +18,7 @@ In this sample application we perform the following operations:
   - NetApp Files Account
   - Capacity Pool
   - NFS 4.1 enabled Volume
-  - Snapshot
-  - Volume from Snapshot
-- Clean up created resources
+- Clean up created resources (not enabled by default)
 
 If you don't already have a Microsoft Azure subscription, you can get a FREE trial account [here](http://go.microsoft.com/fwlink/?LinkId=330212).
 
