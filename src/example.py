@@ -36,7 +36,25 @@ VOLUME_USAGE_QUOTA = 107374182400  # 100GiB
 
 
 def create_account(client, resource_group_name, anf_account_name, location,
-                   tags=None, active_directories=None):
+                   tags=None):
+    """Creates an Azure NetApp Files Account
+
+    Function that creates an Azure NetApp Account, which requires building the
+    account body object first.
+
+    Args:
+        client (AzureNetAppFilesManagementClient): Azure Resource Provider
+            Client designed to interact with ANF resources
+        resource_group_name (string): Name of the resource group where the
+            account will be created
+        location (string): Azure short name of the region where resource will
+            be deployed
+        tags (object): Optional. Key-value pairs to tag the resource, default
+            value is None. E.g. {'cc':'1234','dept':'IT'}
+
+    Returns:
+        NetAppAccount: Returns the newly created NetAppAccount resource
+    """
 
     account_body = NetAppAccount(location=location, tags=tags)
 
@@ -48,6 +66,33 @@ def create_account(client, resource_group_name, anf_account_name, location,
 def create_capacitypool_async(client, resource_group_name, anf_account_name,
                               capacitypool_name, service_level, size, location,
                               tags=None):
+    """Creates a capacity pool within an account
+
+    Function that creates a Capacity Pool, capacity pools are needed to define
+    maximum service level and capacity.
+
+    Args:
+        client (AzureNetAppFilesManagementClient): Azure Resource Provider
+            Client designed to interact with ANF resources
+        resource_group_name (string): Name of the resource group where the
+            capacity pool will be created, it needs to be the same as the
+            Account
+        anf_account_name (string): Name of the Azure NetApp Files Account where
+            the capacity pool will be created
+        capacitypool_name (string): Capacity pool name
+        service_level (string): Desired service level for this new capacity
+            pool, valid values are "Ultra","Premium","Standard"
+        size (long): Capacity pool size, values range from 4398046511104
+            (4TiB) to 549755813888000 (500TiB)
+        location (string): Azure short name of the region where resource will
+            be deployed, needs to be the same as the account
+        tags (object): Optional. Key-value pairs to tag the resource, default
+            value is None. E.g. {'cc':'1234','dept':'IT'}
+
+    Returns:
+        CapacityPool: Returns the newly created capacity pool resource
+    """
+
     capacitypool_body = CapacityPool(
         location=location,
         service_level=service_level,
@@ -62,6 +107,37 @@ def create_capacitypool_async(client, resource_group_name, anf_account_name,
 def create_volume(client, resource_group_name, anf_account_name,
                   capacitypool_name, volume_name, volume_usage_quota,
                   service_level, subnet_id, location, tags=None):
+    """Creates a volume within a capacity pool
+
+    Function that in this example creates a NFSv4.1 volume within a capacity
+    pool, as a note service level needs to be the same as the capacity pool.
+    This function also defines the volume body as the configuration settings
+    of the new volume.
+
+    Args:
+        client (AzureNetAppFilesManagementClient): Azure Resource Provider
+            Client designed to interact with ANF resources
+        resource_group_name (string): Name of the resource group where the
+            volume will be created, it needs to be the same as the account
+        anf_account_name (string): Name of the Azure NetApp Files Account where
+            the capacity pool holding the volume exists
+        capacitypool_name (string): Capacity pool name where volume will be
+            created
+        volume_name (string): Volume name
+        volume_usage_quota (long): Volume size in bytes, minimum value is
+            107374182400 (100GiB), maximum value is 109951162777600 (100TiB)
+        service_level (string): Volume service level, needs to be the same as
+            the capacity pool, valid values are "Ultra","Premium","Standard"
+        subnet_id (string): Subnet resource id of the delegated to ANF Volumes
+            subnet
+        location (string): Azure short name of the region where resource will
+            be deployed, needs to be the same as the account
+        tags (object): Optional. Key-value pairs to tag the resource, default
+            value is None. E.g. {'cc':'1234','dept':'IT'}
+
+    Returns:
+        Volume: Returns the newly created volume resource
+    """                 
 
     rule_list = [ExportPolicyRule(
         allowed_clients="0.0.0.0/0",
