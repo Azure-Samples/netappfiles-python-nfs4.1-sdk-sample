@@ -15,6 +15,10 @@ from azure.mgmt.netapp import AzureNetAppFilesManagementClient
 from datetime import datetime
 from msrestazure.azure_exceptions import CloudError
 
+def print_header(header_string):
+    print(header_string)
+    print('-' * len(header_string))
+
 
 def get_credentials():
     """Gets the file system secured secret
@@ -24,7 +28,7 @@ def get_credentials():
 
     Returns:
         ServicePrincipalCredentials: Returns the Service Principal Credential object
-        string: Returns the subscription id associated by defaul to the service principal
+        string: Returns the subscription id associated by default to the service principal
     """
 
     credential_file = os.environ.get('AZURE_AUTH_LOCATION')
