@@ -19,7 +19,7 @@ from azure.mgmt.netapp.models import NetAppAccount, \
     ExportPolicyRule, \
     VolumePropertiesExportPolicy
 from msrestazure.azure_exceptions import CloudError
-from sample_utils import console_output
+from sample_utils import console_output, print_header
 
 SHOULD_CLEANUP = False
 LOCATION = 'eastus'
@@ -170,8 +170,9 @@ def create_volume(client, resource_group_name, anf_account_name,
 def run_example():
     """Azure NetApp Files SDK management example."""
 
-    print("Azure NetAppFiles Python SDK Sample - Sample project that performs CRUD management operations with Azure NetApp Files SDK with Python")
-    print("-------------------------------------------------------------------------------------------------------------------------------------")
+    print_header("Azure NetAppFiles Python SDK Sample - Sample "
+        "project that creates an NFS v4.1 volume with Azure NetApp "
+        " Files SDK with Python")
 
     # Creating the Azure NetApp Files Client with an Application
     # (service principal) token provider
@@ -214,22 +215,24 @@ def run_example():
         raise
 
     # Creating a Volume
-    #
-    # Note: With exception of Accounts, all resources with Name property
-    # returns a relative path up to the name and to use this property in
-    # other methods, like Get for example, the argument needs to be
-    # sanitized and just the actual name needs to be used (the hierarchy
-    # needs to be cleaned up in the name).
-    # Capacity Pool Name property example: "pmarques-anf01/pool01"
-    # "pool01" is the actual name that needs to be used instead. Below
-    # you will see a sample function that parses the name from its
-    # resource id: resource_uri_utils.get_anf_capacitypool()
+    
+    '''
+    Note: With exception of Accounts, all resources with Name property
+    returns a relative path up to the name and to use this property in
+    other methods, like Get for example, the argument needs to be
+    sanitized and just the actual name needs to be used (the hierarchy
+    needs to be cleaned up in the name).
+    Capacity Pool Name property example: "pmarques-anf01/pool01"
+    "pool01" is the actual name that needs to be used instead. Below
+    you will see a sample function that parses the name from its
+    resource id: resource_uri_utils.get_anf_capacity_pool()
+    '''
     console_output('Creating a Volume ...')
     subnet_id = '/subscriptions/{}/resourceGroups/{}/providers/Microsoft.Network/virtualNetworks/{}/subnets/{}'.format(
         subscription_id, VNET_RESOURCE_GROUP_NAME, VNET_NAME, SUBNET_NAME)
     volume = None
     try:
-        pool_name = resource_uri_utils.get_anf_capacitypool(capacity_pool.id)
+        pool_name = resource_uri_utils.get_anf_capacity_pool(capacity_pool.id)
 
         volume = create_volume(anf_client,
                                RESOURCE_GROUP_NAME,
@@ -247,9 +250,11 @@ def run_example():
             'An error ocurred. Error details: {}'.format(ex.message))
         raise
 
-    # Cleaning up volumes - for this to happen, please change the value of
-    # SHOULD_CLEANUP variable to true.
-    # Note: Volume deletion operations at the RP level are executed serially
+    '''
+    Cleaning up volumes - for this to happen, please change the value of
+    SHOULD_CLEANUP variable to true.
+    Note: Volume deletion operations at the RP level are executed serially
+    '''
     if SHOULD_CLEANUP:
         # Cleaning up. This process needs to start the cleanup from the
         # innermost resources down in the hierarchy chain in our case
@@ -263,7 +268,7 @@ def run_example():
                 console_output("\t\tDeleting {}".format(volume_id))
                 anf_client.volumes.delete(RESOURCE_GROUP_NAME,
                                           account.name,
-                                          resource_uri_utils.get_anf_capacitypool(
+                                          resource_uri_utils.get_anf_capacity_pool(
                                               capacity_pool.id),
                                           resource_uri_utils.get_anf_volume(
                                               volume_id)
@@ -280,11 +285,11 @@ def run_example():
 
         # Cleaning up Capacity Pool
         console_output("\tDeleting Capacity Pool {} ...".format(
-            resource_uri_utils.get_anf_capacitypool(capacity_pool.id)))
+            resource_uri_utils.get_anf_capacity_pool(capacity_pool.id)))
         try:
             anf_client.pools.delete(RESOURCE_GROUP_NAME,
                                     account.name,
-                                    resource_uri_utils.get_anf_capacitypool(
+                                    resource_uri_utils.get_anf_capacity_pool(
                                         capacity_pool.id)
                                     ).wait()
 
@@ -309,12 +314,14 @@ def run_example():
             raise
 
 
-# This script expects that the following environment var are set:
-#
-# AZURE_AUTH_LOCATION: contains path for azureauth.json file
-#
-# File content (and how to generate) is documented at
-# https://docs.microsoft.com/en-us/dotnet/azure/dotnet-sdk-azure-authenticate?view=azure-dotnet
+'''
+This script expects that the following environment var are set:
+
+AZURE_AUTH_LOCATION: contains path for azureauth.json file
+
+File content (and how to generate) is documented at
+https://docs.microsoft.com/en-us/dotnet/azure/dotnet-sdk-azure-authenticate?view=azure-dotnet
+'''
 
 if __name__ == "__main__":
 
