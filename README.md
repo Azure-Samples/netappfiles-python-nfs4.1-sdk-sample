@@ -89,9 +89,9 @@ There is a section in the code dedicated to remove created resources, by default
 
 1. Clone it locally
     ```powershell
-    git clone https://github.com/Azure-Samples/azure-netappfiles-nsf4.1-sdk-sample-for-python.git
+    git clone https://github.com/Azure-Samples/azure-netappfiles-nfs4.1-sdk-sample-for-python.git
     ```
-1. Change folder to **.\azure-netappfiles-nsf4.1-sdk-sample-for-python\src**
+1. Change folder to **.\azure-netappfiles-nfs4.1-sdk-sample-for-python\src**
 2. Install any missing dependencies as needed
     ```bash
     pip install -r ./requirements.txt
