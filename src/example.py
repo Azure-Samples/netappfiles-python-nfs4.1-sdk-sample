@@ -18,8 +18,9 @@ from azure.mgmt.netapp.models import NetAppAccount, \
     Volume, \
     ExportPolicyRule, \
     VolumePropertiesExportPolicy
+from azure.mgmt.resource import ResourceManagementClient
 from msrestazure.azure_exceptions import CloudError
-from sample_utils import console_output, print_header
+from sample_utils import console_output, print_header, resource_exists
 
 SHOULD_CLEANUP = False
 LOCATION = 'eastus'
@@ -34,6 +35,8 @@ CAPACITYPOOL_SIZE = 4398046511104  # 4TiB
 VOLUME_NAME = 'Vol-{}-{}'.format(ANF_ACCOUNT_NAME, CAPACITYPOOL_NAME)
 VOLUME_USAGE_QUOTA = 107374182400  # 100GiB
 
+# Resource SDK related (change only if API version is not supported anymore)
+VIRTUAL_NETWORKS_SUBNET_API_VERSION = '2018-11-01'
 
 def create_account(client, resource_group_name, anf_account_name, location,
                    tags=None):
@@ -179,6 +182,21 @@ def run_example():
     credentials, subscription_id = sample_utils.get_credentials()
     anf_client = AzureNetAppFilesManagementClient(
         credentials, subscription_id)
+
+    # Checking if vnet/subnet information leads to a valid resource
+    resources_client = ResourceManagementClient(credentials, subscription_id)
+    SUBNET_ID = '/subscriptions/{}/resourceGroups/{}/providers/Microsoft.Network/virtualNetworks/{}/subnets/{}'.format(
+        subscription_id, VNET_RESOURCE_GROUP_NAME, VNET_NAME, SUBNET_NAME)
+
+    result = resource_exists(resources_client, 
+        SUBNET_ID, 
+        VIRTUAL_NETWORKS_SUBNET_API_VERSION)
+
+    if not result:
+        console_output("ERROR: Subnet not with id {} not found".format(
+            SUBNET_ID))
+        raise Exception("Subnet not found error. Subnet Id {}".format(
+            SUBNET_ID))
 
     # Creating an Azure NetApp Account
     console_output('Creating Azure NetApp Files account ...')
