@@ -29,7 +29,7 @@ If you don't already have a Microsoft Azure subscription, you can get a FREE tri
 3. Subscription needs to be whitelisted for Azure NetApp Files. For more information, please refer to [this](https://docs.microsoft.com/azure/azure-netapp-files/azure-netapp-files-register#waitlist) document.
 4. Resource Group created
 5. Virtual Network with a delegated subnet to Microsoft.Netapp/volumes resource. For more information, please refer to [Guidelines for Azure NetApp Files network planning](https://docs.microsoft.com/en-us/azure/azure-netapp-files/azure-netapp-files-network-topologies)
-6. For this sample Python console application work, we need to authenticate and the method chosen for this sample is using service principals.
+6. For this sample Python console application work, we need to authenticate and the chosen method for this sample is using service principals.
    1. Within an [Azure Cloud Shell](https://docs.microsoft.com/en-us/azure/cloud-shell/quickstart) session, make sure you're logged on at the subscription where you want to be associated with the service principal by default:
         ```bash
         az account show
@@ -96,7 +96,7 @@ There is a section in the code dedicated to remove created resources, by default
     ```bash
     pip install -r ./requirements.txt
     ```
-3. Make sure you have the azureauth.json and its environment variable with the path to it defined (as previously describe in [prerequisites](#Prerequisites))
+3. Make sure you have the azureauth.json and its environment variable with the path to it defined (as previously described at [prerequisites](#Prerequisites))
 4. Edit file **example.py** and change the variables contents as appropriate (names are self-explanatory).
 5. Run the script
     ```powershell
