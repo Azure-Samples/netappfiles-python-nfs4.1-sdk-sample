@@ -160,7 +160,6 @@ def wait_for_anf_resource(client, resource_id, interval_in_sec=10, retries=60):
                     resource_uri_utils.get_anf_volume(resource_id),
                     resource_uri_utils.get_anf_snapshot(resource_id)
                 )
-                break
             elif resource_uri_utils.is_anf_volume(resource_id):
                 client.volumes.get(
                     resource_uri_utils.get_resource_group(resource_id),
@@ -168,20 +167,19 @@ def wait_for_anf_resource(client, resource_id, interval_in_sec=10, retries=60):
                     resource_uri_utils.get_anf_capacity_pool(resource_id),
                     resource_uri_utils.get_anf_volume(resource_id)
                 )
-                break
             elif resource_uri_utils.is_anf_capacity_pool(resource_id):
                 client.pools.get(
                     resource_uri_utils.get_resource_group(resource_id),
                     resource_uri_utils.get_anf_account(resource_id),
                     resource_uri_utils.get_anf_capacity_pool(resource_id)
                 )
-                break
             elif resource_uri_utils.is_anf_account(resource_id):
                 client.accounts.get(
                     resource_uri_utils.get_resource_group(resource_id),
                     resource_uri_utils.get_anf_account(resource_id)
                 )
-                break
+                
+            break
         except CloudError as ex:
             pass
 
