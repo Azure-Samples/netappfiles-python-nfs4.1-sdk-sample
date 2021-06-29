@@ -11,15 +11,14 @@ import sample_utils
 import resource_uri_utils
 import azure.mgmt.netapp.models
 from haikunator import Haikunator
-from azure.common.credentials import ServicePrincipalCredentials
-from azure.mgmt.netapp import AzureNetAppFilesManagementClient
+from azure.core.exceptions import AzureError
+from azure.mgmt.netapp import NetAppManagementClient
 from azure.mgmt.netapp.models import NetAppAccount, \
     CapacityPool, \
     Volume, \
     ExportPolicyRule, \
     VolumePropertiesExportPolicy
 from azure.mgmt.resource import ResourceManagementClient
-from msrestazure.azure_exceptions import CloudError
 from sample_utils import console_output, print_header, resource_exists
 
 SHOULD_CLEANUP = False
@@ -46,7 +45,7 @@ def create_account(client, resource_group_name, anf_account_name, location,
     account body object first.
 
     Args:
-        client (AzureNetAppFilesManagementClient): Azure Resource Provider
+        client (NetAppManagementClient): Azure Resource Provider
             Client designed to interact with ANF resources
         resource_group_name (string): Name of the resource group where the
             account will be created
@@ -61,9 +60,9 @@ def create_account(client, resource_group_name, anf_account_name, location,
 
     account_body = NetAppAccount(location=location, tags=tags)
 
-    return client.accounts.create_or_update(account_body,
-                                            resource_group_name,
-                                            anf_account_name).result()
+    return client.accounts.begin_create_or_update(resource_group_name,
+                                            anf_account_name,
+                                            account_body).result()
 
 
 def create_capacitypool_async(client, resource_group_name, anf_account_name,
@@ -75,7 +74,7 @@ def create_capacitypool_async(client, resource_group_name, anf_account_name,
     maximum service level and capacity.
 
     Args:
-        client (AzureNetAppFilesManagementClient): Azure Resource Provider
+        client (NetAppManagementClient): Azure Resource Provider
             Client designed to interact with ANF resources
         resource_group_name (string): Name of the resource group where the
             capacity pool will be created, it needs to be the same as the
@@ -101,10 +100,10 @@ def create_capacitypool_async(client, resource_group_name, anf_account_name,
         service_level=service_level,
         size=size)
 
-    return client.pools.create_or_update(capacitypool_body,
-                                         resource_group_name,
+    return client.pools.begin_create_or_update(resource_group_name,
                                          anf_account_name,
-                                         capacitypool_name).result()
+                                         capacitypool_name,
+                                         capacitypool_body).result()
 
 
 def create_volume(client, resource_group_name, anf_account_name,
@@ -118,7 +117,7 @@ def create_volume(client, resource_group_name, anf_account_name,
     of the new volume.
 
     Args:
-        client (AzureNetAppFilesManagementClient): Azure Resource Provider
+        client (NetAppManagementClient): Azure Resource Provider
             Client designed to interact with ANF resources
         resource_group_name (string): Name of the resource group where the
             volume will be created, it needs to be the same as the account
@@ -163,11 +162,11 @@ def create_volume(client, resource_group_name, anf_account_name,
         protocol_types=["NFSv4.1"],
         export_policy=export_policies)
 
-    return client.volumes.create_or_update(volume_body,
-                                           resource_group_name,
+    return client.volumes.begin_create_or_update(resource_group_name,
                                            anf_account_name,
                                            capacitypool_name,
-                                           volume_name).result()
+                                           volume_name,
+                                           volume_body).result()
 
 
 def run_example():
@@ -180,7 +179,7 @@ def run_example():
     # Creating the Azure NetApp Files Client with an Application
     # (service principal) token provider
     credentials, subscription_id = sample_utils.get_credentials()
-    anf_client = AzureNetAppFilesManagementClient(
+    anf_client = NetAppManagementClient(
         credentials, subscription_id)
 
     # Checking if vnet/subnet information leads to a valid resource
@@ -209,7 +208,7 @@ def run_example():
         console_output(
             '\tAccount successfully created, resource id: {}'
             .format(account.id))
-    except CloudError as ex:
+    except AzureError as ex:
         console_output(
             'An error ocurred. Error details: {}'.format(ex.message))
         raise
@@ -227,7 +226,7 @@ def run_example():
                                                   LOCATION)
         console_output('\tCapacity Pool successfully created, resource id: {}'
                        .format(capacity_pool.id))
-    except CloudError as ex:
+    except AzureError as ex:
         console_output(
             'An error ocurred. Error details: {}'.format(ex.message))
         raise
@@ -261,9 +260,13 @@ def run_example():
                                CAPACITYPOOL_SERVICE_LEVEL,
                                subnet_id,
                                LOCATION)
+
+        # ARM Workaround to wait for the creation completion
+        sample_utils.wait_for_anf_resource(anf_client, volume.id)
+
         console_output(
             '\tVolume successfully created, resource id: {}'.format(volume.id))
-    except CloudError as ex:
+    except AzureError as ex:
         console_output(
             'An error ocurred. Error details: {}'.format(ex.message))
         raise
@@ -284,7 +287,7 @@ def run_example():
             volume_ids = [volume.id]
             for volume_id in volume_ids:
                 console_output("\t\tDeleting {}".format(volume_id))
-                anf_client.volumes.delete(RESOURCE_GROUP_NAME,
+                anf_client.volumes.begin_delete(RESOURCE_GROUP_NAME,
                                           account.name,
                                           resource_uri_utils.get_anf_capacity_pool(
                                               capacity_pool.id),
@@ -296,7 +299,7 @@ def run_example():
                 sample_utils.wait_for_no_anf_resource(anf_client, volume_id)
 
                 console_output('\t\tDeleted Volume: {}'.format(volume_id))
-        except CloudError as ex:
+        except AzureError as ex:
             console_output(
                 'An error ocurred. Error details: {}'.format(ex.message))
             raise
@@ -305,7 +308,7 @@ def run_example():
         console_output("\tDeleting Capacity Pool {} ...".format(
             resource_uri_utils.get_anf_capacity_pool(capacity_pool.id)))
         try:
-            anf_client.pools.delete(RESOURCE_GROUP_NAME,
+            anf_client.pools.begin_delete(RESOURCE_GROUP_NAME,
                                     account.name,
                                     resource_uri_utils.get_anf_capacity_pool(
                                         capacity_pool.id)
@@ -316,7 +319,7 @@ def run_example():
 
             console_output(
                 '\t\tDeleted Capacity Pool: {}'.format(capacity_pool.id))
-        except CloudError as ex:
+        except AzureError as ex:
             console_output(
                 'An error ocurred. Error details: {}'.format(ex.message))
             raise
@@ -324,9 +327,9 @@ def run_example():
         # Cleaning up Account
         console_output("\tDeleting Account {} ...".format(account.name))
         try:
-            anf_client.accounts.delete(RESOURCE_GROUP_NAME, account.name)
+            anf_client.accounts.begin_delete(RESOURCE_GROUP_NAME, account.name)
             console_output('\t\tDeleted Account: {}'.format(account.id))
-        except CloudError as ex:
+        except AzureError as ex:
             console_output(
                 'An error ocurred. Error details: {}'.format(ex.message))
             raise
