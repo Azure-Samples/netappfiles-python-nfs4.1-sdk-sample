@@ -32,7 +32,7 @@ from sample_utils import console_output, print_header, resource_exists
 import sample_utils
 import resource_uri_utils
 
-SHOULD_CLEANUP = True
+SHOULD_CLEANUP = False
 LOCATION = 'eastus'
 RESOURCE_GROUP_NAME = 'anf01-rg'
 VNET_NAME = 'vnet-01'
