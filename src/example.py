@@ -5,11 +5,20 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
+"""example.py code sample
 
-import os
-import sample_utils
-import resource_uri_utils
-import azure.mgmt.netapp.models
+Code sample that deploys an ANF Account, Capacity Pool and NFSv4.1
+volume using Python ANF SDK.
+
+Notes:
+This script expects that the following environment var are set:
+AZURE_AUTH_LOCATION: contains path for azureauth.json file
+
+File content (and how to generate) is documented at
+https://docs.microsoft.com/en-us/dotnet/azure/dotnet-sdk-azure-authenticate?view=azure-dotnet
+
+"""
+
 from haikunator import Haikunator
 from azure.core.exceptions import AzureError
 from azure.mgmt.netapp import NetAppManagementClient
@@ -20,8 +29,10 @@ from azure.mgmt.netapp.models import NetAppAccount, \
     VolumePropertiesExportPolicy
 from azure.mgmt.resource import ResourceManagementClient
 from sample_utils import console_output, print_header, resource_exists
+import sample_utils
+import resource_uri_utils
 
-SHOULD_CLEANUP = False
+SHOULD_CLEANUP = True
 LOCATION = 'eastus'
 RESOURCE_GROUP_NAME = 'anf01-rg'
 VNET_NAME = 'vnet-01'
@@ -98,7 +109,8 @@ def create_capacitypool_async(client, resource_group_name, anf_account_name,
     capacitypool_body = CapacityPool(
         location=location,
         service_level=service_level,
-        size=size)
+        size=size,
+        tags=tags)
 
     return client.pools.begin_create_or_update(resource_group_name,
                                          anf_account_name,
@@ -139,7 +151,7 @@ def create_volume(client, resource_group_name, anf_account_name,
 
     Returns:
         Volume: Returns the newly created volume resource
-    """                 
+    """
 
     rule_list = [ExportPolicyRule(
         allowed_clients="0.0.0.0/0",
@@ -160,7 +172,8 @@ def create_volume(client, resource_group_name, anf_account_name,
         service_level=service_level,
         subnet_id=subnet_id,
         protocol_types=["NFSv4.1"],
-        export_policy=export_policies)
+        export_policy=export_policies,
+        tags=tags)
 
     return client.volumes.begin_create_or_update(resource_group_name,
                                            anf_account_name,
@@ -184,18 +197,21 @@ def run_example():
 
     # Checking if vnet/subnet information leads to a valid resource
     resources_client = ResourceManagementClient(credentials, subscription_id)
-    SUBNET_ID = '/subscriptions/{}/resourceGroups/{}/providers/Microsoft.Network/virtualNetworks/{}/subnets/{}'.format(
+    subnet_id = ('/subscriptions/{}'
+                '/resourceGroups/{}'
+                '/providers/Microsoft.Network/virtualNetworks/{}'
+                '/subnets/{}').format(
         subscription_id, VNET_RESOURCE_GROUP_NAME, VNET_NAME, SUBNET_NAME)
 
-    result = resource_exists(resources_client, 
-        SUBNET_ID, 
+    result = resource_exists(resources_client,
+        subnet_id,
         VIRTUAL_NETWORKS_SUBNET_API_VERSION)
 
     if not result:
         console_output("ERROR: Subnet not with id {} not found".format(
-            SUBNET_ID))
+            subnet_id))
         raise Exception("Subnet not found error. Subnet Id {}".format(
-            SUBNET_ID))
+            subnet_id))
 
     # Creating an Azure NetApp Account
     console_output('Creating Azure NetApp Files account ...')
@@ -232,20 +248,21 @@ def run_example():
         raise
 
     # Creating a Volume
-    
-    '''
-    Note: With exception of Accounts, all resources with Name property
-    returns a relative path up to the name and to use this property in
-    other methods, like Get for example, the argument needs to be
-    sanitized and just the actual name needs to be used (the hierarchy
-    needs to be cleaned up in the name).
-    Capacity Pool Name property example: "pmarques-anf01/pool01"
-    "pool01" is the actual name that needs to be used instead. Below
-    you will see a sample function that parses the name from its
-    resource id: resource_uri_utils.get_anf_capacity_pool()
-    '''
+
+    # Note: With exception of Accounts, all resources with Name property
+    # returns a relative path up to the name and to use this property in
+    # other methods, like Get for example, the argument needs to be
+    # sanitized and just the actual name needs to be used (the hierarchy
+    # needs to be cleaned up in the name).
+    # Capacity Pool Name property example: "pmarques-anf01/pool01"
+    # "pool01" is the actual name that needs to be used instead. Below
+    # you will see a sample function that parses the name from its
+    # resource id: resource_uri_utils.get_anf_capacity_pool()
     console_output('Creating a Volume ...')
-    subnet_id = '/subscriptions/{}/resourceGroups/{}/providers/Microsoft.Network/virtualNetworks/{}/subnets/{}'.format(
+    subnet_id = ('/subscriptions/{}'
+                 '/resourceGroups/{}'
+                 '/providers/Microsoft.Network/virtualNetworks/{}'
+                 '/subnets/{}').format(
         subscription_id, VNET_RESOURCE_GROUP_NAME, VNET_NAME, SUBNET_NAME)
     volume = None
     try:
@@ -271,11 +288,9 @@ def run_example():
             'An error ocurred. Error details: {}'.format(ex.message))
         raise
 
-    '''
-    Cleaning up volumes - for this to happen, please change the value of
-    SHOULD_CLEANUP variable to true.
-    Note: Volume deletion operations at the RP level are executed serially
-    '''
+    # Cleaning up volumes - for this to happen, please change the value of
+    # SHOULD_CLEANUP variable to true.
+    # Note: Volume deletion operations at the RP level are executed serially
     if SHOULD_CLEANUP:
         # Cleaning up. This process needs to start the cleanup from the
         # innermost resources down in the hierarchy chain in our case
@@ -334,15 +349,6 @@ def run_example():
                 'An error ocurred. Error details: {}'.format(ex.message))
             raise
 
-
-'''
-This script expects that the following environment var are set:
-
-AZURE_AUTH_LOCATION: contains path for azureauth.json file
-
-File content (and how to generate) is documented at
-https://docs.microsoft.com/en-us/dotnet/azure/dotnet-sdk-azure-authenticate?view=azure-dotnet
-'''
 
 if __name__ == "__main__":
 

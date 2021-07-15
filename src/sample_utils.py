@@ -5,18 +5,27 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-import sys
+"""sample_utils.py code sample
+
+SDK related functions to be consumed by the example.py sample code.
+
+"""
+
 import os
 import json
 import time
-import resource_uri_utils
+from datetime import datetime
 from azure.core.exceptions import HttpResponseError, \
     ResourceNotFoundError
 from azure.identity import ClientSecretCredential
-from azure.mgmt.netapp import NetAppManagementClient
-from datetime import datetime
+import resource_uri_utils
 
 def print_header(header_string):
+    """Prints a header output
+
+    Args:
+        header_string (string): String value to output
+    """
     print(header_string)
     print('-' * len(header_string))
 
@@ -102,7 +111,7 @@ def wait_for_no_anf_resource(client, resource_id, interval_in_sec=10,
         retires (int): Number of times a poll will be performed
     """
 
-    for i in range(0, retries):
+    for _ in range(0, retries):
         time.sleep(interval_in_sec)
         try:
             if resource_uri_utils.is_anf_snapshot(resource_id):
@@ -131,7 +140,7 @@ def wait_for_no_anf_resource(client, resource_id, interval_in_sec=10,
                     resource_uri_utils.get_resource_group(resource_id),
                     resource_uri_utils.get_anf_account(resource_id)
                 )
-        except ResourceNotFoundError as ex:
+        except ResourceNotFoundError:
             break
 
 
@@ -150,7 +159,7 @@ def wait_for_anf_resource(client, resource_id, interval_in_sec=10, retries=60):
         retires (int): Number of times a poll will be performed
     """
 
-    for i in range(0, retries):
+    for _ in range(0, retries):
         time.sleep(interval_in_sec)
         try:
             if resource_uri_utils.is_anf_snapshot(resource_id):
@@ -179,9 +188,8 @@ def wait_for_anf_resource(client, resource_id, interval_in_sec=10, retries=60):
                     resource_uri_utils.get_resource_group(resource_id),
                     resource_uri_utils.get_anf_account(resource_id)
                 )
-                
             break
-        except ResourceNotFoundError as ex:
+        except ResourceNotFoundError:
             pass
 
 
