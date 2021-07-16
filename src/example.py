@@ -5,22 +5,32 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
+"""example.py code sample
 
-import os
-import sample_utils
-import resource_uri_utils
-import azure.mgmt.netapp.models
+Code sample that deploys an ANF Account, Capacity Pool and NFSv4.1
+volume using Python ANF SDK.
+
+Notes:
+This script expects that the following environment var are set:
+AZURE_AUTH_LOCATION: contains path for azureauth.json file
+
+File content (and how to generate) is documented at
+https://docs.microsoft.com/en-us/dotnet/azure/dotnet-sdk-azure-authenticate?view=azure-dotnet
+
+"""
+
 from haikunator import Haikunator
-from azure.common.credentials import ServicePrincipalCredentials
-from azure.mgmt.netapp import AzureNetAppFilesManagementClient
+from azure.core.exceptions import AzureError
+from azure.mgmt.netapp import NetAppManagementClient
 from azure.mgmt.netapp.models import NetAppAccount, \
     CapacityPool, \
     Volume, \
     ExportPolicyRule, \
     VolumePropertiesExportPolicy
 from azure.mgmt.resource import ResourceManagementClient
-from msrestazure.azure_exceptions import CloudError
 from sample_utils import console_output, print_header, resource_exists
+import sample_utils
+import resource_uri_utils
 
 SHOULD_CLEANUP = False
 LOCATION = 'eastus'
@@ -46,7 +56,7 @@ def create_account(client, resource_group_name, anf_account_name, location,
     account body object first.
 
     Args:
-        client (AzureNetAppFilesManagementClient): Azure Resource Provider
+        client (NetAppManagementClient): Azure Resource Provider
             Client designed to interact with ANF resources
         resource_group_name (string): Name of the resource group where the
             account will be created
@@ -61,9 +71,9 @@ def create_account(client, resource_group_name, anf_account_name, location,
 
     account_body = NetAppAccount(location=location, tags=tags)
 
-    return client.accounts.create_or_update(account_body,
-                                            resource_group_name,
-                                            anf_account_name).result()
+    return client.accounts.begin_create_or_update(resource_group_name,
+                                            anf_account_name,
+                                            account_body).result()
 
 
 def create_capacitypool_async(client, resource_group_name, anf_account_name,
@@ -75,7 +85,7 @@ def create_capacitypool_async(client, resource_group_name, anf_account_name,
     maximum service level and capacity.
 
     Args:
-        client (AzureNetAppFilesManagementClient): Azure Resource Provider
+        client (NetAppManagementClient): Azure Resource Provider
             Client designed to interact with ANF resources
         resource_group_name (string): Name of the resource group where the
             capacity pool will be created, it needs to be the same as the
@@ -99,12 +109,13 @@ def create_capacitypool_async(client, resource_group_name, anf_account_name,
     capacitypool_body = CapacityPool(
         location=location,
         service_level=service_level,
-        size=size)
+        size=size,
+        tags=tags)
 
-    return client.pools.create_or_update(capacitypool_body,
-                                         resource_group_name,
+    return client.pools.begin_create_or_update(resource_group_name,
                                          anf_account_name,
-                                         capacitypool_name).result()
+                                         capacitypool_name,
+                                         capacitypool_body).result()
 
 
 def create_volume(client, resource_group_name, anf_account_name,
@@ -118,7 +129,7 @@ def create_volume(client, resource_group_name, anf_account_name,
     of the new volume.
 
     Args:
-        client (AzureNetAppFilesManagementClient): Azure Resource Provider
+        client (NetAppManagementClient): Azure Resource Provider
             Client designed to interact with ANF resources
         resource_group_name (string): Name of the resource group where the
             volume will be created, it needs to be the same as the account
@@ -140,7 +151,7 @@ def create_volume(client, resource_group_name, anf_account_name,
 
     Returns:
         Volume: Returns the newly created volume resource
-    """                 
+    """
 
     rule_list = [ExportPolicyRule(
         allowed_clients="0.0.0.0/0",
@@ -161,13 +172,14 @@ def create_volume(client, resource_group_name, anf_account_name,
         service_level=service_level,
         subnet_id=subnet_id,
         protocol_types=["NFSv4.1"],
-        export_policy=export_policies)
+        export_policy=export_policies,
+        tags=tags)
 
-    return client.volumes.create_or_update(volume_body,
-                                           resource_group_name,
+    return client.volumes.begin_create_or_update(resource_group_name,
                                            anf_account_name,
                                            capacitypool_name,
-                                           volume_name).result()
+                                           volume_name,
+                                           volume_body).result()
 
 
 def run_example():
@@ -180,23 +192,26 @@ def run_example():
     # Creating the Azure NetApp Files Client with an Application
     # (service principal) token provider
     credentials, subscription_id = sample_utils.get_credentials()
-    anf_client = AzureNetAppFilesManagementClient(
+    anf_client = NetAppManagementClient(
         credentials, subscription_id)
 
     # Checking if vnet/subnet information leads to a valid resource
     resources_client = ResourceManagementClient(credentials, subscription_id)
-    SUBNET_ID = '/subscriptions/{}/resourceGroups/{}/providers/Microsoft.Network/virtualNetworks/{}/subnets/{}'.format(
+    subnet_id = ('/subscriptions/{}'
+                '/resourceGroups/{}'
+                '/providers/Microsoft.Network/virtualNetworks/{}'
+                '/subnets/{}').format(
         subscription_id, VNET_RESOURCE_GROUP_NAME, VNET_NAME, SUBNET_NAME)
 
-    result = resource_exists(resources_client, 
-        SUBNET_ID, 
+    result = resource_exists(resources_client,
+        subnet_id,
         VIRTUAL_NETWORKS_SUBNET_API_VERSION)
 
     if not result:
         console_output("ERROR: Subnet not with id {} not found".format(
-            SUBNET_ID))
+            subnet_id))
         raise Exception("Subnet not found error. Subnet Id {}".format(
-            SUBNET_ID))
+            subnet_id))
 
     # Creating an Azure NetApp Account
     console_output('Creating Azure NetApp Files account ...')
@@ -209,7 +224,7 @@ def run_example():
         console_output(
             '\tAccount successfully created, resource id: {}'
             .format(account.id))
-    except CloudError as ex:
+    except AzureError as ex:
         console_output(
             'An error ocurred. Error details: {}'.format(ex.message))
         raise
@@ -227,26 +242,27 @@ def run_example():
                                                   LOCATION)
         console_output('\tCapacity Pool successfully created, resource id: {}'
                        .format(capacity_pool.id))
-    except CloudError as ex:
+    except AzureError as ex:
         console_output(
             'An error ocurred. Error details: {}'.format(ex.message))
         raise
 
     # Creating a Volume
-    
-    '''
-    Note: With exception of Accounts, all resources with Name property
-    returns a relative path up to the name and to use this property in
-    other methods, like Get for example, the argument needs to be
-    sanitized and just the actual name needs to be used (the hierarchy
-    needs to be cleaned up in the name).
-    Capacity Pool Name property example: "pmarques-anf01/pool01"
-    "pool01" is the actual name that needs to be used instead. Below
-    you will see a sample function that parses the name from its
-    resource id: resource_uri_utils.get_anf_capacity_pool()
-    '''
+
+    # Note: With exception of Accounts, all resources with Name property
+    # returns a relative path up to the name and to use this property in
+    # other methods, like Get for example, the argument needs to be
+    # sanitized and just the actual name needs to be used (the hierarchy
+    # needs to be cleaned up in the name).
+    # Capacity Pool Name property example: "pmarques-anf01/pool01"
+    # "pool01" is the actual name that needs to be used instead. Below
+    # you will see a sample function that parses the name from its
+    # resource id: resource_uri_utils.get_anf_capacity_pool()
     console_output('Creating a Volume ...')
-    subnet_id = '/subscriptions/{}/resourceGroups/{}/providers/Microsoft.Network/virtualNetworks/{}/subnets/{}'.format(
+    subnet_id = ('/subscriptions/{}'
+                 '/resourceGroups/{}'
+                 '/providers/Microsoft.Network/virtualNetworks/{}'
+                 '/subnets/{}').format(
         subscription_id, VNET_RESOURCE_GROUP_NAME, VNET_NAME, SUBNET_NAME)
     volume = None
     try:
@@ -261,18 +277,20 @@ def run_example():
                                CAPACITYPOOL_SERVICE_LEVEL,
                                subnet_id,
                                LOCATION)
+
+        # ARM Workaround to wait for the creation completion
+        sample_utils.wait_for_anf_resource(anf_client, volume.id)
+
         console_output(
             '\tVolume successfully created, resource id: {}'.format(volume.id))
-    except CloudError as ex:
+    except AzureError as ex:
         console_output(
             'An error ocurred. Error details: {}'.format(ex.message))
         raise
 
-    '''
-    Cleaning up volumes - for this to happen, please change the value of
-    SHOULD_CLEANUP variable to true.
-    Note: Volume deletion operations at the RP level are executed serially
-    '''
+    # Cleaning up volumes - for this to happen, please change the value of
+    # SHOULD_CLEANUP variable to true.
+    # Note: Volume deletion operations at the RP level are executed serially
     if SHOULD_CLEANUP:
         # Cleaning up. This process needs to start the cleanup from the
         # innermost resources down in the hierarchy chain in our case
@@ -284,7 +302,7 @@ def run_example():
             volume_ids = [volume.id]
             for volume_id in volume_ids:
                 console_output("\t\tDeleting {}".format(volume_id))
-                anf_client.volumes.delete(RESOURCE_GROUP_NAME,
+                anf_client.volumes.begin_delete(RESOURCE_GROUP_NAME,
                                           account.name,
                                           resource_uri_utils.get_anf_capacity_pool(
                                               capacity_pool.id),
@@ -296,7 +314,7 @@ def run_example():
                 sample_utils.wait_for_no_anf_resource(anf_client, volume_id)
 
                 console_output('\t\tDeleted Volume: {}'.format(volume_id))
-        except CloudError as ex:
+        except AzureError as ex:
             console_output(
                 'An error ocurred. Error details: {}'.format(ex.message))
             raise
@@ -305,7 +323,7 @@ def run_example():
         console_output("\tDeleting Capacity Pool {} ...".format(
             resource_uri_utils.get_anf_capacity_pool(capacity_pool.id)))
         try:
-            anf_client.pools.delete(RESOURCE_GROUP_NAME,
+            anf_client.pools.begin_delete(RESOURCE_GROUP_NAME,
                                     account.name,
                                     resource_uri_utils.get_anf_capacity_pool(
                                         capacity_pool.id)
@@ -316,7 +334,7 @@ def run_example():
 
             console_output(
                 '\t\tDeleted Capacity Pool: {}'.format(capacity_pool.id))
-        except CloudError as ex:
+        except AzureError as ex:
             console_output(
                 'An error ocurred. Error details: {}'.format(ex.message))
             raise
@@ -324,22 +342,13 @@ def run_example():
         # Cleaning up Account
         console_output("\tDeleting Account {} ...".format(account.name))
         try:
-            anf_client.accounts.delete(RESOURCE_GROUP_NAME, account.name)
+            anf_client.accounts.begin_delete(RESOURCE_GROUP_NAME, account.name)
             console_output('\t\tDeleted Account: {}'.format(account.id))
-        except CloudError as ex:
+        except AzureError as ex:
             console_output(
                 'An error ocurred. Error details: {}'.format(ex.message))
             raise
 
-
-'''
-This script expects that the following environment var are set:
-
-AZURE_AUTH_LOCATION: contains path for azureauth.json file
-
-File content (and how to generate) is documented at
-https://docs.microsoft.com/en-us/dotnet/azure/dotnet-sdk-azure-authenticate?view=azure-dotnet
-'''
 
 if __name__ == "__main__":
 

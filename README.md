@@ -24,7 +24,7 @@ If you don't already have a Microsoft Azure subscription, you can get a FREE tri
 
 ## Prerequisites
 
-1. Python (code was built and tested under 3.7.3 version)
+1. Python (code was built and tested under 3.9.5 version)
 2. Azure Subscription
 3. Subscription needs to be whitelisted for Azure NetApp Files. For more information, please refer to [this](https://docs.microsoft.com/azure/azure-netapp-files/azure-netapp-files-register#waitlist) document.
 4. Resource Group created

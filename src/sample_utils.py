@@ -5,17 +5,27 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-import sys
+"""sample_utils.py code sample
+
+SDK related functions to be consumed by the example.py sample code.
+
+"""
+
 import os
 import json
 import time
-import resource_uri_utils
-from azure.common.credentials import ServicePrincipalCredentials
-from azure.mgmt.netapp import AzureNetAppFilesManagementClient
 from datetime import datetime
-from msrestazure.azure_exceptions import CloudError
+from azure.core.exceptions import HttpResponseError, \
+    ResourceNotFoundError
+from azure.identity import ClientSecretCredential
+import resource_uri_utils
 
 def print_header(header_string):
+    """Prints a header output
+
+    Args:
+        header_string (string): String value to output
+    """
     print(header_string)
     print('-' * len(header_string))
 
@@ -38,10 +48,10 @@ def get_credentials():
 
     subscription_id = credential_info['subscriptionId']
 
-    credentials = ServicePrincipalCredentials(
+    credentials = ClientSecretCredential(
+        tenant_id=credential_info['tenantId'],
         client_id=credential_info['clientId'],
-        secret=credential_info['clientSecret'],
-        tenant=credential_info['tenantId']
+        client_secret=credential_info['clientSecret']
     )
     return credentials, subscription_id
 
@@ -94,14 +104,14 @@ def wait_for_no_anf_resource(client, resource_id, interval_in_sec=10,
     if polling reached out maximum retries.
 
     Args:
-        client (AzureNetAppFilesManagementClient): Azure Resource Provider
+        client (NetAppManagementClient): Azure Resource Provider
             Client designed to interact with ANF resources
         resource_id (string): Resource Id of the resource to be checked upon
         interval_in_sec (int): Interval used between checks
         retires (int): Number of times a poll will be performed
     """
 
-    for i in range(0, retries):
+    for _ in range(0, retries):
         time.sleep(interval_in_sec)
         try:
             if resource_uri_utils.is_anf_snapshot(resource_id):
@@ -130,7 +140,7 @@ def wait_for_no_anf_resource(client, resource_id, interval_in_sec=10,
                     resource_uri_utils.get_resource_group(resource_id),
                     resource_uri_utils.get_anf_account(resource_id)
                 )
-        except CloudError as ex:
+        except ResourceNotFoundError:
             break
 
 
@@ -142,14 +152,14 @@ def wait_for_anf_resource(client, resource_id, interval_in_sec=10, retries=60):
     or if polling reached out maximum retries.
 
     Args:
-        client (AzureNetAppFilesManagementClient): Azure Resource Provider
+        client (NetAppManagementClient): Azure Resource Provider
             Client designed to interact with ANF resources
         resource_id (string): Resource Id of the resource to be checked upon
         interval_in_sec (int): Interval used between checks
         retires (int): Number of times a poll will be performed
     """
 
-    for i in range(0, retries):
+    for _ in range(0, retries):
         time.sleep(interval_in_sec)
         try:
             if resource_uri_utils.is_anf_snapshot(resource_id):
@@ -178,9 +188,8 @@ def wait_for_anf_resource(client, resource_id, interval_in_sec=10, retries=60):
                     resource_uri_utils.get_resource_group(resource_id),
                     resource_uri_utils.get_anf_account(resource_id)
                 )
-                
             break
-        except CloudError as ex:
+        except ResourceNotFoundError:
             pass
 
 
@@ -198,12 +207,12 @@ def resource_exists(resource_client, resource_id, api_version):
 
     try:
         return resource_client.resources.check_existence_by_id(resource_id, api_version)
-    except CloudError as e:
+    except HttpResponseError as e:
         if e.status_code == 405: # HEAD not supported
             try:
                 resource_client.resources.get_by_id(resource_id, api_version)
                 return True
-            except CloudError as ie:
+            except HttpResponseError as ie:
                 if ie.status_code == 404:
                     return False
         raise # If not 405 or 404, not expected

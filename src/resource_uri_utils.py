@@ -5,6 +5,11 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
+"""resource_uri_utils.py code sample
+
+Resource URI related utilities to be consumed by the example.py sample code.
+
+"""
 
 def get_resource_value(resource_uri, resource_name):
     """Gets the resource name based on resource type
@@ -226,14 +231,10 @@ def is_anf_volume(resource_uri):
     Returns:
         boolean: Returns true if resource is a volume
     """
-    
+
     if (not resource_uri.strip()) or (not is_anf_resource(resource_uri)):
         return False
 
-    # return (resource_uri.rfind('/snapshots/') == -1) \
-    #     and (resource_uri.rfind('/volumes/') > -1)
-
-        
     return (not is_anf_snapshot(resource_uri)) \
         and (resource_uri.rfind('/volumes/') > -1)
 
